@@ -8,11 +8,14 @@ topic, which can be consumed by your flight control or bridge node.
 - One-click commands for Offboard, Arming, Takeoff, and Emergency Kill.
 - Directional movement (Forward/Backward/Left/Right/Up/Down).
 - Yaw control (CW/CCW) and Roll/Pitch adjustments.
-- Home position set and reference tracking shortcut.
+- Stop at current position and go to home position shortcuts.
+- Reference tracking ON/OFF toggle with visual state.
+- Live pose display (x/y/z, roll/pitch/yaw) from PX4 odometry.
 
 ## Requirements
 - ROS 2 
 - Python 3 with Tkinter (`python3-tk`)
+- `px4_msgs`
 
 ## Build
 From your ROS 2 workspace:
@@ -31,6 +34,7 @@ ros2 launch ui_controller ui_controller.launch.py
 
 ## Topics
 - **Published**: `ui_command` (`std_msgs/Int32`)
+- **Subscribed**: `/fmu/out/vehicle_odometry` (`px4_msgs/VehicleOdometry`)
 
 ## Command Mapping
 The GUI publishes the following integer IDs on `ui_command`:
@@ -53,9 +57,12 @@ The GUI publishes the following integer IDs on `ui_command`:
 | 20 | Roll - |
 | 21 | Pitch + |
 | 22 | Pitch - |
-| 23 | Set Home Position |
-| 24 | Reference Tracking |
+| 23 | Stop at current position |
+| 24 | Reference Tracking ON |
+| 25 | Reference Tracking OFF |
+| 26 | Go to Home Position |
 
 ## Notes
 - The current launch file runs `src/ui_controller_new.py`.
 - Make sure any subscriber node interprets the command IDs consistently.
+- Pose display updates at 2 Hz and shows "Not Recieved" on timeout.
