@@ -284,6 +284,7 @@ class UIController(Node):
         go_home_button.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
         self.reference_tracking_on = False
+        self.reference_tracking_pending = False
         self.reference_tracking_button = Button(
             top_right, text="Reference Tracking (OFF)",
             command=self.toggle_reference_tracking,
@@ -310,7 +311,7 @@ class UIController(Node):
         self.last_pose_time = None
         self.pose_timeout_sec = 1.0
         self.last_reference_time = None
-        self.reference_timeout_sec = 0.01
+        self.reference_timeout_sec = 0.1
         self.root.after(500, self.update_pose_display)
 
     def vehicle_odometry_callback(self, msg):
@@ -350,13 +351,14 @@ class UIController(Node):
             age_ref = (self.get_clock().now() - self.last_reference_time).nanoseconds / 1e9
             if age_ref > self.reference_timeout_sec:
                 self.reference_tracking_on = False
+                self.reference_tracking_pending = False
                 self.reference_tracking_button.config(
                     text="Reference Tracking (OFF)",
                     bg="lightgray",
                     activebackground="gainsboro",
                     activeforeground="black"
                 )
-                self.get_logger().info("reference_tracking_off (no reference trajectory)")
+                self.get_logger().info("reference_tracking_off (reference timeout)")
 
         if not self.pose_received:
             self.pos_labels["x"].config(text="x : Not Recieved")
@@ -397,18 +399,30 @@ class UIController(Node):
 
     def reference_trajectory_callback(self, msg):
         self.last_reference_time = self.get_clock().now()
-
-    def toggle_reference_tracking(self):
-        self.reference_tracking_on = not self.reference_tracking_on
-        if self.reference_tracking_on:
+        if self.reference_tracking_pending and not self.reference_tracking_on:
+            self.reference_tracking_pending = False
+            self.reference_tracking_on = True
             self.reference_tracking_button.config(
                 text="Reference Tracking (ON)",
                 bg="lightgreen",
                 activebackground="palegreen",
                 activeforeground="black"
             )
+            self.get_logger().info("reference_tracking_on (reference received)")
+
+    def toggle_reference_tracking(self):
+        if not self.reference_tracking_on and not self.reference_tracking_pending:
+            self.reference_tracking_pending = True
+            self.reference_tracking_button.config(
+                text="Reference Tracking (HOLD)",
+                bg="khaki",
+                activebackground="khaki",
+                activeforeground="black"
+            )
             self.publish_message(24, "reference_tracking_on")
         else:
+            self.reference_tracking_on = False
+            self.reference_tracking_pending = False
             self.reference_tracking_button.config(
                 text="Reference Tracking (OFF)",
                 bg="lightgray",
